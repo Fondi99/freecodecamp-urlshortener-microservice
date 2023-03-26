@@ -5,10 +5,10 @@ const cors = require('cors');
 const app = express();
 const validUrl = require('valid-url');
 const mongoose = require('mongoose');
-const shortid = require('shortid');
 mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
 console.log(typeof (process.env.MONGO_URI));
 const Schema = mongoose.Schema;
+const shortid = (() => (id = 0, () => id++))();
 
 // Basic Configuration
 const port = process.env.PORT || 3000;
@@ -48,7 +48,7 @@ const URL = mongoose.model("URL", urlSchema);
 // Start of the proyect
 app.post('/api/shorturl', async function (req, res, next) {
   const url = req.body.url
-  const urlCode = shortid.generate()
+  const urlCode = shortid()
   if (!validUrl.isWebUri(url)) {
     res.json({ error: 'invalid url' })
   } else {
