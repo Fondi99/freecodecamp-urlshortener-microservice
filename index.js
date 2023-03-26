@@ -38,7 +38,7 @@ const urlSchema = new Schema({
     type: String
   },
   short_url: {
-    type: String
+    type: Number
   }
 });
 
@@ -62,14 +62,14 @@ app.post('/api/shorturl', async function (req, res, next) {
           short_url: exists.short_url
         });
       } else {
-        exists = new URL({
+        let newUrl = new URL({
           original_url: url,
           short_url: urlCode
         })
-        await exists.save()
+        await newUrl.save()
         res.json({
-          original_url: exists.original_url,
-          short_url: exists.short_url
+          original_url: newUrl.original_url,
+          short_url: newUrl.short_url
         })
       }
     } catch (error) {
