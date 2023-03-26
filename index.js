@@ -1,9 +1,11 @@
 require('dotenv').config();
 const express = require('express');
+const mongo = require('mongodb');
 const cors = require('cors');
 const app = express();
-const isUrl = require('is-url');
-let mongoose = require('mongoose');
+const validUrl = require('valid-url');
+const mongoose = require('mongoose');
+const shortid = require('shortid');
 mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
 const Schema = mongoose.Schema;
 
@@ -29,55 +31,66 @@ app.listen(port, function () {
 });
 
 // Database configuration
+
 const urlSchema = new Schema({
-  name: { _id: Number, name: String }
+  original_url: {
+    type: String
+  },
+  short_url: {
+    type: String
+  }
 });
 
-const Url = mongoose.model("Url", urlSchema);
 
-const saveUrl = async function (url) {
-  try {
-    let data = new Url({ name: url }).save()
-    return data
-  } catch (error) {
-    console.log(error);
-  }
-}
-const findUrlByName = async (name) => {
-  Url.find({ name: name }).then((res) => {
-    return res
-  }).catch((err) => {
-    return err
-  })
-};
-const findUrlById = async (id) => {
-  try {
-    let url = Url.findById(id)
-    return url
-  } catch (error) {
-    console.log(error);
-  }
-};
+const URL = mongoose.model("URL", urlSchema);
 
 // Start of the proyect
-app.post('/api/shorturl', function (req, res, next) {
-  originalURL = req.body.url
-  if (isUrl(originalURL)) {
-    let { exists } = findUrlByName(originalURL)
-    if (exists == true) {
-      res.json({ original_url: exists.name, short_url: exists._id })
-    } else if (exists == undefined) {
-      let newUrl = saveUrl(originalURL)
-      console.log(`Name: ${newUrl.name} and id: ${newUrl._id}`);
-      res.json({ original_url: newUrl.name, short_url: newUrl._id })
-    }
-  } else {
+app.post('/api/shorturl', async function (req, res, next) {
+  const url = req.body.url
+  const urlCode = shortid.generate()
+  if (!validUrl.isWebUri(url)) {
     res.json({ error: 'invalid url' })
+  } else {
+    try {
+      let exists = await URL.findOne({
+        original_url: url
+      })
+      if (exists) {
+        res.json({
+          original_url: exists.original_url,
+          short_url: exists.short_url
+        });
+      } else {
+        exists = new URL({
+          original_url: url,
+          short_url: urlCode
+        })
+        await exists.save()
+        res.json({
+          original_url: exists.original_url,
+          short_url: exists.short_url
+        })
+      }
+    } catch (error) {
+      console.log(error);
+      res.json('Server error...')
+    }
   }
 })
 
-app.get('/api/shorturl/:id', function (req, res, next) {
-  id = req.params.id
-  let url = findUrlById(id)
-  res.json({ original_url: url.name, short_url: url._id })
+app.get('/api/shorturl/:short_url?', async function (req, res) {
+  try {
+    id = req.params.id
+    let url = await URL.findOne({
+      short_url: req.params.short_url
+    })
+    if (url) {
+      return res.redirect(url.original_url)
+    } else {
+      return res.json('No URL found')
+    }
+  } catch (error) {
+    console.log(error);
+    res.json('Server error...')
+  }
 })
