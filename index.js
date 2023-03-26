@@ -8,7 +8,6 @@ const mongoose = require('mongoose');
 mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
 console.log(typeof (process.env.MONGO_URI));
 const Schema = mongoose.Schema;
-const shortid = (() => (id = 0, () => id++))();
 
 // Basic Configuration
 const port = process.env.PORT || 3000;
@@ -56,7 +55,6 @@ app.post('/api/shorturl', async function (req, res, next) {
         original_url: url
       })
       if (exists) {
-        console.log("It exists, ", exists);
         res.json({
           original_url: exists.original_url,
           short_url: exists.short_url
@@ -66,7 +64,6 @@ app.post('/api/shorturl', async function (req, res, next) {
           original_url: url,
           short_url: await URL.count()
         })
-        console.log("Dont exist, ", newUrl);
         await newUrl.save()
         res.json({
           original_url: newUrl.original_url,
