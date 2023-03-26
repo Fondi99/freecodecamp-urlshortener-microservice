@@ -48,7 +48,6 @@ const URL = mongoose.model("URL", urlSchema);
 // Start of the proyect
 app.post('/api/shorturl', async function (req, res, next) {
   const url = req.body.url
-  const urlCode = shortid()
   if (!validUrl.isWebUri(url)) {
     res.json({ error: 'invalid url' })
   } else {
@@ -57,6 +56,7 @@ app.post('/api/shorturl', async function (req, res, next) {
         original_url: url
       })
       if (exists) {
+        console.log("It exists, ", exists);
         res.json({
           original_url: exists.original_url,
           short_url: exists.short_url
@@ -64,8 +64,9 @@ app.post('/api/shorturl', async function (req, res, next) {
       } else {
         let newUrl = new URL({
           original_url: url,
-          short_url: urlCode
+          short_url: await URL.count()
         })
+        console.log("Dont exist, ", newUrl);
         await newUrl.save()
         res.json({
           original_url: newUrl.original_url,
